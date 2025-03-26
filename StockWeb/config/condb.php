@@ -5,7 +5,7 @@
 
 
 
-$servername = "192.168.1.45";
+$servername = "192.168.1.49";
 $username = "newmos1";
 $password = "newmos1"; //ถ้าไม่ได้ตั้งรหัสผ่านให้ลบ yourpassword ออก
  

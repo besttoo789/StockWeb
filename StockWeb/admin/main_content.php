@@ -67,7 +67,6 @@
   </section>
 </div>
 
-<!-- Enhanced CSS for styling -->
 <style>
   
   .btn-float {

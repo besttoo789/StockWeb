@@ -2,7 +2,7 @@
 // รับค่า username ที่เลือกจาก dropdown (ถ้ามี)
 $selected_username = isset($_GET['username']) ? $_GET['username'] : '';
 
-// Query สำหรับประวัติการยืม (แสดงเฉพาะที่ confirmed หรือ completed)
+// Query สำหรับประวัติการยืม
 $sql = "
     SELECT r.*, u.username, p.product_name 
     FROM reservations r 
@@ -28,36 +28,48 @@ $user_query->execute();
 $users = $user_query->fetchAll();
 ?>
 
+<style>
+    .status-confirmed { color: #28a745; font-weight: bold; }
+    .status-returned { color: #007bff; font-weight: bold; }
+    .status-completed { color: #6c757d; font-weight: bold; }
+    .card-header { background-color: #f8f9fa; }
+    .table th { background-color: #e9ecef; }
+    .select-wrapper { margin-bottom: 20px; }
+    .table-responsive { overflow-x: auto; }
+</style>
+
 <div class="content-wrapper">
-    <!-- Content Header -->
     <section class="content-header">
         <div class="container-fluid">
             <div class="row mb-2">
                 <div class="col-sm-6">
-                    <h1>ประวัติการยืม</h1>
+                    <h1><i class="fas fa-history"></i> ประวัติการยืม</h1>
                 </div>
             </div>
         </div>
     </section>
 
-    <!-- Main content -->
     <section class="content">
         <div class="container-fluid">
-            <!-- Dropdown เลือก username -->
-            <div class="row mb-3">
+            <div class="row select-wrapper">
                 <div class="col-md-4">
                     <form method="GET">
                         <div class="form-group">
-                            <label>เลือกผู้ใช้งาน:</label>
-                            <select name="username" class="form-control" onchange="this.form.submit()">
-                                <option value="">ทั้งหมด</option>
-                                <?php foreach ($users as $user) { ?>
-                                    <option value="<?php echo $user['username']; ?>" 
-                                        <?php echo $selected_username == $user['username'] ? 'selected' : ''; ?>>
-                                        <?php echo $user['username']; ?>
-                                    </option>
-                                <?php } ?>
-                            </select>
+                            <label class="font-weight-bold">เลือกผู้ใช้งาน:</label>
+                            <div class="input-group">
+                                <select name="username" class="form-control" onchange="this.form.submit()">
+                                    <option value="">ทั้งหมด</option>
+                                    <?php foreach ($users as $user) { ?>
+                                        <option value="<?php echo htmlspecialchars($user['username']); ?>" 
+                                            <?php echo $selected_username == $user['username'] ? 'selected' : ''; ?>>
+                                            <?php echo htmlspecialchars($user['username']); ?>
+                                        </option>
+                                    <?php } ?>
+                                </select>
+                                <div class="input-group-append">
+                                    <span class="input-group-text"><i class="fas fa-user"></i></span>
+                                </div>
+                            </div>
                         </div>
                     </form>
                 </div>
@@ -65,44 +77,43 @@ $users = $user_query->fetchAll();
 
             <div class="row">
                 <div class="col-12">
-                    <div class="card">
-                        <div class="card-body">
-                            <table id="historyTable" class="table table-bordered table-striped table-sm">
+                    <div class="card shadow-sm">
+                        <div class="card-header">
+                            <h3 class="card-title">รายการประวัติการยืม</h3>
+                        </div>
+                        <div class="card-body table-responsive">
+                            <table id="historyTable" class="table table-bordered table-hover table-sm">
                                 <thead>
                                     <tr>
-                                        <th width="5%" class="text-center">ID</th>
-                                        <th width="20%" class="text-center">รหัสการยืม</th>
-                                        <th width="20%" class="text-center">ผู้ยืม</th>
-                                        <th width="15%" class="text-center">สินค้า</th>
-                                        <th width="5%" class="text-center">จำนวน</th>
-                                        <th width="15%" class="text-center">สถานะ</th>
-                                        <th width="10%" class="text-center">วันที่ยืม</th>
-                                        
+                                        <th class="text-center">ID</th>
+                                        <th class="text-center">รหัสการยืม</th>
+                                        <th class="text-center">ผู้ยืม</th>
+                                        <th class="text-center">สินค้า</th>
+                                        <th class="text-center">จำนวน</th>
+                                        <th class="text-center">สถานะ</th>
+                                        <th class="text-center">วันที่ยืม</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     <?php 
                                     $i = 1;
                                     foreach ($rs as $row) {
+                                        $status_class = 'status-' . $row['status'];
+                                        $status_text = $row['status'] == 'confirmed' ? 'กำลังยืม' : 
+                                                      ($row['status'] == 'returned' ? 'คืนแล้ว' : 'เสร็จสิ้น');
                                     ?>
                                     <tr>
                                         <td class="text-center"><?php echo $i++; ?></td>
-                                        <td class="text-center"><?php echo $row['reserve_id']; ?></td>
-                                        <td class="text-center"><?php echo $row['username']; ?></td>
-                                        <td class="text-center"><?php echo $row['product_name']; ?></td>
+                                        <td class="text-center"><?php echo htmlspecialchars($row['reserve_id']); ?></td>
+                                        <td class="text-center"><?php echo htmlspecialchars($row['username']); ?></td>
+                                        <td class="text-center"><?php echo htmlspecialchars($row['product_name']); ?></td>
                                         <td class="text-center"><?php echo $row['quantity']; ?></td>
                                         <td class="text-center">
-                                            <span style="color: <?php 
-                                                echo $row['status'] == 'confirmed' ? 'green' : 
-                                                    ($row['status'] == 'returned' ? 'blue' : 'gray'); ?>">
-                                                <?php 
-                                                echo $row['status'] == 'confirmed' ? 'กำลังยืม' : 
-                                                    ($row['status'] == 'returned' ? 'คืนแล้ว' : 'เสร็จสิ้น'); 
-                                                ?>
+                                            <span class="<?php echo $status_class; ?>">
+                                                <?php echo $status_text; ?>
                                             </span>
                                         </td>
-                                        <td class="text-center"><?php echo $row['created_at']; ?></td>
-                                        
+                                        <td class="text-center"><?php echo date('d/m/Y H:i', strtotime($row['created_at'])); ?></td>
                                     </tr>
                                     <?php } ?>
                                 </tbody>
@@ -115,11 +126,10 @@ $users = $user_query->fetchAll();
     </section>
 </div>
 
-<!-- ถ้าใช้ DataTables อาจเพิ่ม script นี้ -->
 <script>
 $(document).ready(function() {
     $('#historyTable').DataTable({
-        "order": [[6, "desc"]], // เรียงตามวันที่ยืมล่าสุดก่อน
+        "order": [[6, "desc"]],
         "language": {
             "lengthMenu": "แสดง _MENU_ รายการต่อหน้า",
             "zeroRecords": "ไม่พบข้อมูล",
@@ -133,7 +143,10 @@ $(document).ready(function() {
                 "next": "ถัดไป",
                 "previous": "ก่อนหน้า"
             }
-        }
+        },
+        "responsive": true,
+        "pageLength": 10,
+        "lengthMenu": [5, 10, 25, 50, 100]
     });
 });
 </script>

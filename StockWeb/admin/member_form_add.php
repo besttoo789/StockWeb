@@ -1,8 +1,9 @@
 <?php
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     try {
+        // Assuming $condb is already defined from database connection
         // Input validation
-        $requiredFields = ['username', 'name', 'surname', 'password', 'role', 'email'];
+        $requiredFields = ['username', 'name', 'surname', 'password', 'role_id', 'email', 'phone'];
         foreach ($requiredFields as $field) {
             if (!isset($_POST[$field]) || empty(trim($_POST[$field]))) {
                 throw new Exception("กรุณากรอกข้อมูลให้ครบทุกช่อง");
@@ -13,17 +14,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $name = filter_var($_POST['name'], FILTER_SANITIZE_STRING);
         $surname = filter_var($_POST['surname'], FILTER_SANITIZE_STRING);
         $email = filter_var($_POST['email'], FILTER_SANITIZE_EMAIL);
-        $role = $_POST['role'];
+        $phone = filter_var($_POST['phone'], FILTER_SANITIZE_STRING);
+        $role_id = filter_var($_POST['role_id'], FILTER_SANITIZE_NUMBER_INT);
         
         // Email validation
         if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
             throw new Exception("รูปแบบอีเมลไม่ถูกต้อง");
         }
 
+        // Phone validation
+        if (!preg_match('/^[0-9]{9,15}$/', $phone)) {
+            throw new Exception("เบอร์โทรศัพท์ต้องเป็นตัวเลข 9-15 หลัก");
+        }
+
         // Password validation
         $password = $_POST['password'];
-        if (strlen($password) < 8) {
-            throw new Exception("รหัสผ่านต้องมีความยาวอย่างน้อย 8 ตัวอักษร");
+        if (strlen($password) < 4) {
+            throw new Exception("รหัสผ่านต้องมีความยาวอย่างน้อย 4 ตัวอักษร");
         }
         $hashed_password = password_hash($password, PASSWORD_BCRYPT);
 
@@ -43,9 +50,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         // Insert new member
         $stmtInsert = $condb->prepare("INSERT INTO users 
-            (username, password, name, surname, email, role)
+            (username, password, name, surname, email, role_id, phone)
             VALUES 
-            (:username, :password, :name, :surname, :email, :role)");
+            (:username, :password, :name, :surname, :email, :role_id, :phone)");
 
         $params = [
             ':username' => $username,
@@ -53,7 +60,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             ':name' => $name,
             ':surname' => $surname,
             ':email' => $email,
-            ':role' => $role
+            ':role_id' => $role_id,
+            ':phone' => $phone
         ];
 
         $result = $stmtInsert->execute($params);
@@ -85,6 +93,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 ?>
 
+<!-- HTML form remains mostly the same, just fixing role field name -->
 <div class="content-wrapper">
     <section class="content-header">
         <div class="container-fluid">
@@ -99,7 +108,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <section class="content">
         <div class="row">
             <div class="col-md-12">
-                <div class="card card-outline card-info">
+               <div class="card card-outline card-info">
                     <div class="card-body">
                         <div class="card card-primary">
                             <form action="" method="post">
@@ -129,15 +138,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                         </div>
                                     </div>
                                     <div class="form-group row">
+                                        <label class="col-sm-2 col-form-label">เบอร์โทรศัพท์</label>
+                                        <div class="col-sm-4">
+                                            <input type="text" name="phone" class="form-control" required placeholder="เบอร์โทรศัพท์" maxlength="15">
+                                        </div>
+                                    </div>
+                                    <div class="form-group row">
                                         <label class="col-sm-2 col-form-label">รหัสผ่าน</label>
                                         <div class="col-sm-4">
-                                            <input type="password" name="password" class="form-control" required placeholder="Password" minlength="8">
+                                            <input type="password" name="password" class="form-control" required placeholder="Password" minlength="4">
                                         </div>
                                     </div>
                                     <div class="form-group row">
                                         <label class="col-sm-2 col-form-label">Level</label>
                                         <div class="col-sm-4">
-                                            <select name="role" class="form-control" required>
+                                            <select name="role_id" class="form-control" required>
                                                 <option value="" disabled selected>-- เลือกระดับ --</option>
                                                 <option value="1">admin</option>
                                                 <option value="2">staff</option>
